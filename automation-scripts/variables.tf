@@ -8,3 +8,7 @@ variable "profile_name" {
     description = "AWS Profile Name"
 }
 
+variable "vpc_id"{
+    type = string
+    description = "VPC details"
+}
