@@ -1,0 +1,58 @@
+---
+- hosts: all
+  gather_facts: false
+  connection: ssh
+  become: true
+  tasks:
+    - name: "Check if package manager is yum "
+      command: which yum
+      register: is_yum_configured
+      ignore_errors: true
+    
+    - name: Package Installation using yum
+      yum:
+        name: ['httpd', 'php', 'git', 'amazon-efs-utils']
+        state: installed
+      become: true
+      become_method: sudo
+      ignore_errors: true
+      when: is_yum_configured.rc == 0
+    
+    - name: "Mount the Volume in Web Server Directory"
+      mount:
+        fstype: xfs
+        src: /dev/xvdf
+        path: /var/www/html
+        state: mounted
+    
+    - name: "Clearing Code Directory before Cloning Repository"
+      file:
+        path: "/var/www/html/*"
+        state: absent
+      register: delete_status
+    
+    - name: "File deletion status"
+      debug:
+        msg: "${{ delete_status }}"
+    
+    - name: "Clone the Web Server Code"
+      git:
+        repo: https://github.com/riteshsoni10/demo_website.git
+        dest: /var/www/html
+    
+    - name: "Stopping Firewall on Host OS"
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: true
+    
+    - name: "Stopping SElinux "
+      shell: "setenforce 0"
+      ignore_errors: true
+    
+    - name: "Staring Apache Web Server"
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes

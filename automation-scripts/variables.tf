@@ -30,3 +30,17 @@ variable "image_id"{
     }
     */
 }
+
+
+variable "user_name" {
+    type        = string
+    description = "The login user for SSH connection"
+    default     = "ec2-user" 
+}
+
+variable "connection_type" {
+    type        = string
+    description = "Connection type for remote login"
+    default     = "ssh"
+}
+

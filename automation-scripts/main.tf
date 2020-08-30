@@ -15,7 +15,7 @@ module "instance_launch" {
     instance_key_name = var.key_name
     vpc_id         = var.vpc_id
     ami_id         = var.image_id
-    depends_on = [
-        module.efs
-    ]
+    connection_user = var.user_name
+    connection_type = var.connection_type
+    efs_cluster_dns_name  = module.efs.efs_cluster_dns_name
 }
