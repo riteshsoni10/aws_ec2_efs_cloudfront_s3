@@ -9,3 +9,4 @@ module "efs" {
     subnet_ids     = data.aws_subnet_ids.vpc_details.ids
     vpc_cidr_block = data.aws_vpc.vpc_details.cidr_block
 }
+
