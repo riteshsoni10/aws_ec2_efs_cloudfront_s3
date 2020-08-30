@@ -3,7 +3,7 @@ variable "region_name" {
     description = "Region Name"
 }
 
-variable "profile_name" {
+variable "user_profile" {
     type = string   
     description = "AWS Profile Name"
 }
