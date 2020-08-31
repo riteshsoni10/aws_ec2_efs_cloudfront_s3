@@ -18,14 +18,6 @@ variable "instance_type"{
     description = "Instance Type of the Web Server"
 }
 
-/*
-variable "controller_public_ip"{
-    type        = string
-    description = "Controller Node Public IP for SSH Whitelisting"
-    source      =
-}
-*/
-
 variable "ami_id"{
     type = string
     description = "AMI Id for the EC2 Instance"
