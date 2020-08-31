@@ -14,7 +14,7 @@ resource "aws_key_pair" "create_instance_key_pair" {
 }
 
 ## Saving Private Key for SSH Login in pem Format
-resource "local_file" "store_instance_key"{
+resource "local_file" "store_instance_key" {
     content = tls_private_key.instance_key.private_key_pem
     filename = var.instance_key_name
     file_permission = "0400"
