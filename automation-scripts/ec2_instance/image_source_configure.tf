@@ -12,7 +12,7 @@ resource "null_resource" "configure_image_url" {
         }
         provisioner remote-exec {
                 inline =[
-                        "grep -rli 'images' /var/www/html/* | sudo xargs sudo sed -i 's+images+https://${var.cdn_dns_name}+g' "
+                        "grep -rli 'images' /var/www/html/* | xargs sudo sed -i 's+images+https://${var.cdn_dns_name}+g'"
                 ]
         }
 }
