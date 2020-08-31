@@ -54,8 +54,9 @@ variable "connection_type" {
     default     = "ssh"
 }
 
+
 variable "image_s3_bucket_name" {
-        type = string
+        type        = string
 	description = "Unique Bucket Name for Images"
 }
 
