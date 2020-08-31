@@ -1,5 +1,4 @@
 ## S3 Bucket for Images
-
 resource "aws_s3_bucket" "s3_image_store" {
         bucket = var.bucket_name
         acl = var.bucket_acl
