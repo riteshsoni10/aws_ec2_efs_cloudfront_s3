@@ -4,7 +4,7 @@
   connection: ssh
   become: true
   tasks:
-    - name: "Check if package manager is yum "
+    - name: "Check if package manager is yum"
       command: which yum
       register: is_yum_configured
       ignore_errors: true
