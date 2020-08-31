@@ -23,19 +23,18 @@ module "instance_launch" {
     cdn_dns_name          = module.image_cdn_configure.cdn_dns_name
 }
 
-
 module "images_bucket"{
-	source = "./s3_bucket"
-	bucket_name= var.image_s3_bucket_name 
-	bucket_acl = var.image_s3_bucket_acl	
+	source               = "./s3_bucket"
+	bucket_name          = var.image_s3_bucket_name 
+	bucket_acl           = var.image_s3_bucket_acl	
 	force_destroy_bucket = var.image_s3_force_destroy_bucket	
 }
 
 
 module "image_cdn_configure" {
-	source = "./cloudfront"
+	source                   = "./cloudfront"
 	image_source_domain_name = module.images_bucket.image_source_domain_name
-	s3_origin_id = var.bucket_origin_id
-	enabled      = var.enabled
+	s3_origin_id             = var.bucket_origin_id
+	enabled                  = var.enabled
 }
 
