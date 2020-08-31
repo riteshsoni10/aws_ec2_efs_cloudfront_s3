@@ -1,83 +1,14 @@
-variable "region_name" {
-    type = string
-    description = "Region Name"
-}
-
-variable "user_profile" {
-    type = string   
-    description = "AWS Profile Name"
-}
-
-variable "vpc_id"{
-    type = string
-    description = "VPC details"
-}
-
-variable "vpc_subnet_id" {
-    type = string
-    description = "Subnet Id for instance launch"
-}
-
-variable "key_name"{
-    type = string
-    description = "Instance Key Pair Name attached with the instance"
-}
-
-variable "image_id"{
-    type = string
-    description = "AMI Id for the EC2 Instance"
-    default = "ami-052c08d70def0ac62"
-    /*
-    validation {
-        # regex(...) fails if it cannot find a match
-        condition     = can(regex("^ami-", var.image_id))
-        error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
-    }
-    */
-}
-
-variable "instance_type"{
-    type = string
-    description = "Instance Type of the Web Server"
+variable "image_source_domain_name"{
+	type = string
+	description = "DNS regionla nam of S3 Bucket"
 }
 
 
-variable "user_name" {
-    type        = string
-    description = "The login user for SSH connection"
-    default     = "ec2-user" 
+variable "s3_origin_id"{
+	type = string
+	description = "Name of S3 Cloudfront Origin "
 }
 
-variable "connection_type" {
-    type        = string
-    description = "Connection type for remote login"
-    default     = "ssh"
-}
-
-variable "image_s3_bucket_name" {
-        type = string
-	description = "Unique Bucket Name for Images"
-}
-
-variable "image_s3_bucket_acl" {
-        type = string
-        default = "private"
-	description = "S3 images Bucket ACL"
-}
-
-variable "image_s3_force_destroy_bucket" {
-        type = bool
-        default = true
-        description = "Parmater indicates that the objects from the bucket to be deleted, so that bucket can be destroyed without error"
-}
-
-
-## Cloudfront Module Variables
-
-variable "bucket_origin_id"{
-        type = string
-        description = "Name of S3 Cloudfront Origin "
-}
 
 
 variable "cache_allowed_methods" {
@@ -160,12 +91,3 @@ variable "compression_objects_enable" {
         description = "Parameter for compression of content served using Cloudfront Distribution for web requests"
 
 }
-
-
-
-
-
-
-
-
-

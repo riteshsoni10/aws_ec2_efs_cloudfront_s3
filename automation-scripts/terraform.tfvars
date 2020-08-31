@@ -1,4 +1,8 @@
 region_name = "ap-south-1"
 user_profile = "aws_terraform_user"
 vpc_id = "vpc-0519f2e5c27cad7d4"
+vpc_subnet_id = "subnet-01f9026863ec9e23d"
 key_name = "instance_key"
+instance_type = "t2.micro"
+image_s3_bucket_name = "website-image-source"
+bucket_origin_id     = "imagesS3Origin"

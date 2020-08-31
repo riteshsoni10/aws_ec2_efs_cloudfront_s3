@@ -11,7 +11,7 @@
     
     - name: Package Installation using yum
       yum:
-        name: ['httpd', 'php', 'git', 'amazon-efs-utils']
+        name: ['httpd', 'php', 'git', 'nfs-utils']
         state: installed
       become: true
       become_method: sudo
@@ -20,9 +20,10 @@
     
     - name: "Mount the Volume in Web Server Directory"
       mount:
-        fstype: xfs
-        src: /dev/xvdf
+        fstype: nfs4
+        src: "{{ efs_cluster_dns_name }}:/"
         path: /var/www/html
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
         state: mounted
     
     - name: "Clearing Code Directory before Cloning Repository"
