@@ -95,7 +95,7 @@ terraform init
 </p>
 
 
-Each Task is distributed into modules i.e 
+Each Task is distributed into `modules` i.e 
 - EC2 Instance launch
 - EFS Cluster
 - Image source as S3 bucket
@@ -116,7 +116,7 @@ module "efs" {
 ```
 
 
-### Elastic File System
+### Elastic File System Cluster
 
 Elastic File System is file storage as Service provided by the Amazon Web Services. EFS works in a similiar way as Network File System. We will be creating EFS and allowing ingress traffic on TCP port 2049 i.e NFS Server port.
 
@@ -124,7 +124,7 @@ Elastic File System is file storage as Service provided by the Amazon Web Servic
 resource "aws_efs_file_system" "nfs_server" {
   creation_token = "efs-cluster"
   tags = {
-    Name = "EKS_Cluster"
+    Name = "EFS_Cluster"
   }
 }
 ```
@@ -164,7 +164,7 @@ resource "aws_security_group" "efs_security_group"{
 
 ## Module: instance_launch
 
-The module contains the  files to create the EC2 instance along with the dependencies needed for launch and output variables to pass it to different modules as dependencies. The HCL code to module efs code.
+The module contains the  files to create the EC2 instance along with the dependencies needed for launch and output variables to pass it to different modules as dependencies. The HCL code for instance_launch module.
 
 ```
 module "instance_launch" {
@@ -362,12 +362,6 @@ resource  "null_resource" "invoke_playbook"{
 ```
 We can also use **password** in case, we have configured password based authentication rather than Key Based authentication for User login
 
-<p align="center">
-  <img src="/screenshots/terraform_install_python3_in_remote.png" width="950" title="Automation using Ansible">
-  <br>
-  <em>Fig 12.: Installation of Python Packages </em>
-</p>
-
 
 In `remote-exec` provisioners, we can use any one of following attributes: 
 
@@ -382,11 +376,42 @@ In `remote-exec` provisioners, we can use any one of following attributes:
 	List of scripts that will be copied to remote system and then executed on remote.
 
 
-<p align="center">
-  <img src="/screenshots/terraform_invoke_ansible_playbook.png" width="950" title="Automation using Ansible">
-  <br>
-  <em>Fig 13.: Configuration and Installation of Web Server Packages </em>
-</p>
+### Configure Website to use CDN domain 
+
+We will be using remote-exec provisioner to replace the src with CDN domain name. The resource will be dependent on CDN and invoke playbook resource
+
+```sh
+resource "null_resource" "configure_image_url" {
+        depends_on = [
+             null_resource.application_deployment,
+        ]
+        connection{
+             type = var.connection_type
+             host = aws_instance.web_server.public_ip
+             user  = var.connection_user
+             private_key = file(var.instance_key_name)
+        }
+        provisioner remote-exec {
+            inline =[
+                  "grep -rli 'images' /var/www/html/* | sudo xargs sudo sed -i 's+images+https://${var.cdn_dns_name}+g' "
+            ]
+        }
+}
+```
+
+
+## Module : images_bucket
+
+The module contains the  files to create S3 bucket and upload the images to the bucket and output variables to pass it to different modules as dependencies. The HCL code for module images_bucket .
+
+```tf
+module "images_bucket"{
+	source = "./s3_bucket"
+	bucket_name= var.image_s3_bucket_name 
+	bucket_acl = var.image_s3_bucket_acl	
+	force_destroy_bucket = var.image_s3_force_destroy_bucket	
+}
+```
 
 
 ### S3 Bucket
@@ -419,24 +444,29 @@ resource "aws_s3_bucket" "s3_image_store" {
 
 The Images stored in the wbsite code repository, is uploaded in S3 for serving the images from Cloudfront. Content Delivery Network helps in lowering the latency of accessing of objects i.e image access time will be reduced, if accessed from another region.
 
-For uploading the images, we will be cloning the repository in current workspace using `local-exec` provisioner and then will be uploading only the images to the S3 bucket OR we can configure Jenkins Job to clone the repository for us.
+For uploading the images, we will be cloning the repository in current workspace using `local-exec` provisioner and then will be uploading only the images to the S3 bucket OR we can **configure** `Jenkins Job` to clone the repository for us.
 
 ```sh
-resource "null_resource" "download_website_code"{
+esource "null_resource" "download_website_code" {
         depends_on = [
-                aws_s3_bucket.s3_image_store
+                aws_s3_bucket.s3_image_store,
         ]
-        provisioner local-exec {
-                command =
-		"rm -rf /opt/code/*"
-		"git clone https://github.com/riteshsoni10/demo_website.git /opt/code/"
+        
+	provisioner local-exec {
+                command = "rm -rf demo_website"
+		on_failure = continue
         }
+
+	provisioner local-exec {
+                command = "git clone https://github.com/riteshsoni10/demo_website.git "
+        }
+
 }
 ```
 
 Uploading all the images to S3 Bucket
 ```sh
-resource "aws_s3_bucket_object" "website_image_files" {
+resource "aws_s3_bucket_object" "upload_website_images_s3" {
         depends_on = [
                 null_resource.download_website_code
         ]
@@ -463,15 +493,20 @@ resource "aws_s3_bucket_object" "website_image_files" {
 <p align="center">
   <img src="/screenshots/terraform_upload_images.png" width="950" title="Upload Images">
   <br>
-  <em>Fig 14.: Upload Images (Terraform Plan) </em>
+  <em>Fig 12.: Upload Images (Terraform Plan) </em>
 </p>
 
 
 <p align="center">
   <img src="/screenshots/terraform_upload_images_success.png" width="950" title="Upload Images">
   <br>
-  <em>Fig 15.: Upload Images (Terraform Apply) </em>
+  <em>Fig 13.: Upload Images (Terraform Apply) </em>
 </p>
+
+
+## Module: image_cdn_configure
+
+The module contains the  files to configure cloudfront and upload the images to the bucket and output variables to pass it to different modules as dependencies. The HCL code for module images_bucket .
 
 
 ### CloudFront Distribution
@@ -482,24 +517,21 @@ First we will be creating Origin Access Identity, which will be helpfulin hiding
 
 ```sh
 resource "aws_cloudfront_origin_access_identity" "s3_objects" {
-        comment = "S3-Images-Source"
+        comment = "S3-Image-Source"
 }
 ```
 
-Create Cloudfront Distribution
+**Create Cloudfront Distribution**
 
 The Web Cloudfront Distribution is created to serve objects over http or https protocol.
 
 ```sh
 resource "aws_cloudfront_distribution" "image_distribution" {
-        depends_on = [
-                aws_s3_bucket.s3_image_store
-        ]
         origin {
-                domain_name = aws_s3_bucket.s3_image_store.bucket_regional_domain_name
-                origin_id = var.s3_origin_id
+                domain_name      = var.image_source_domain_name
+                origin_id        = var.s3_origin_id
                 s3_origin_config {
-                  origin_access_identity = aws_cloudfront_origin_access_identity.s3_objects.cloudfront_access_identity_path
+                        origin_access_identity = aws_cloudfront_origin_access_identity.s3_objects.cloudfront_access_identity_path
                 }
         }
         enabled = var.enabled
@@ -534,7 +566,6 @@ resource "aws_cloudfront_distribution" "image_distribution" {
         viewer_certificate {
                  cloudfront_default_certificate = true
         }
-
 }
 ```
 
@@ -552,38 +583,13 @@ resource "aws_cloudfront_distribution" "image_distribution" {
 We have used Cloudfront's, but custom aliases and SSL certificates can also be used
 
 
-### Configure Website to use CDN domain 
-
-We will be using remote-exec provisioner to replace the src with CDN domain name. The resource will be dependent on CDN and invoke playbook resource
-
-```sh
-resource "null_resource" "configure_image_url" {
-        depends_on = [
-                aws_cloudfront_distribution.image_distribution, null_resource.invoke_playbook
-        ]
-        connection{
-                type = var.connection_type
-                host = aws_instance.web_server.public_ip
-                user  = var.connection_user
-                private_key = file("/opt/keys/ec2")
-        }
-
-        provisioner remote-exec {
-                inline =[
-                        "grep -rli 'images' * | xargs -i sed -i \ 
-			's+images+https://${aws_cloudfront_distribution.image_distribution.domain_name}+g' "
-                ]
-        }
-}
-```
-
 
 # Usage Instructions
 
 You should have configured IAM profile in the controller node by following instructions.
 
 1. Clone this repository
-2. Change the working directory to `automation_script`
+2. Change the working directory to `automation-scripts`
 3. Run `terraform init`
 4. Then, `terraform plan`, to see the list of resources that will be created
 5. Then, `terraform apply -auto-approve`
@@ -594,7 +600,6 @@ terraform destroy -auto-approve
 ```
 
 
-
 ## Inputs
 
 | Name | Description | Type | Default | Required |
@@ -603,7 +608,6 @@ terraform destroy -auto-approve
 | user_profile | IAM Credentials of AWS Account with required priviledges | string | `` | yes |
 | instance_ami_id | AMI Id for launching EC2 Instances | string | `` | yes |
 | instance_type | EC2 Instance Type | string | `` | yes |
-| automation_public_ip | Controller Node Public IP to allow ssh connection on EC2 instance | string | `0.0.0.0/0` | no |
 | connection_user | Username for SSH connection to EC2 instance | string | `ec2-user` | yes |
 | connection_type | Type of connection for remote-exec provisioner like (ssh,winrm) | string | `ssh` | no |
 | s3_image_bucket_name | S3 bucket name | string | `` | yes |
@@ -655,7 +659,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/code_deployment.png" width="950" title="Code Deployment Job">
   <br>
-  <em>Fig 16.:  Job Creation </em>
+  <em>Fig 14.:  Job Creation </em>
 </p>
 
 2. **Configure Project URL**
@@ -663,7 +667,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/code_deployment_project_description.png" width="950" title="Project URL Configuration">
   <br>
-  <em>Fig 17.:  Project URL Configuration </em>
+  <em>Fig 15.:  Project URL Configuration </em>
 </p>
 
 3. **Configure Git SCM** 
@@ -671,7 +675,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/code_deployment_scm.png" width="950" title="Github Repository Configuration">
   <br>
-  <em>Fig 18.:  GitHub Repository Configuration </em>
+  <em>Fig 16.:  GitHub Repository Configuration </em>
 </p>
 
 4. **Configure Build Triggers**
@@ -681,7 +685,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/code_deployment_build_triggers.png" width="950" title="Build Trigger Configuration">
   <br>
-  <em>Fig 19.:  Build Trigger Configuration </em>
+  <em>Fig 17.:  Build Trigger Configuration </em>
 </p>
 
 5. **Build Step**
@@ -691,7 +695,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/code_deployment_build_step.png" width="950" title="Build Step Configuration">
   <br>
-  <em>Fig 20.:  Build Step Configuration </em>
+  <em>Fig 18.:  Build Step Configuration </em>
 </p>
 
 6. **Save and Apply**
@@ -706,7 +710,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/infrastructure_deployment_description.png" width="950" title="Project URL">
   <br>
-  <em>Fig 21.:  Project URL </em>
+  <em>Fig 19.:  Project URL </em>
 </p>
 
 3. **Git Configuration**
@@ -714,7 +718,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/infrastructure_deployment_scm.png" width="950" title="SCM">
   <br>
-  <em>Fig 22.:  Source Code Management </em>
+  <em>Fig 20.:  Source Code Management </em>
 </p>
 
 4. **Build Trigger**
@@ -724,7 +728,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/infrastructure_deployment_build_trigger.png" width="950" title="Build Trigger Configuration">
   <br>
-  <em>Fig 23.:  Build Trigger Configuration </em>
+  <em>Fig 21.:  Build Trigger Configuration </em>
 </p>
 
 5. **Build Step**
@@ -734,7 +738,7 @@ Now, if you want to get yourself relieved from all the manual terraform commands
 <p align="center">
   <img src="/screenshots/infrastructure_deployment_build.png" width="950" title="Build Step Configuration">
   <br>
-  <em>Fig 24.:  Build Step </em>
+  <em>Fig 22.:  Build Step </em>
 </p>
 
 6. **Save and Apply**
