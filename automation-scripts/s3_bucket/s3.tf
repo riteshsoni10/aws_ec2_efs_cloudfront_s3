@@ -30,7 +30,7 @@ resource "null_resource" "download_website_code" {
 
 
 # Upload all the website images to S3 bucket
-resource "aws_s3_bucket_object" "website_files" {
+resource "aws_s3_bucket_object" "website_images_upload_s3" {
         depends_on = [
                 null_resource.download_website_code,
         ]
