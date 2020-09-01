@@ -27,5 +27,8 @@ resource "aws_security_group" "instance_security_group"{
 		protocol    = "-1"
 		cidr_blocks = ["0.0.0.0/0"]
 	}
-
+     
+    tags = {
+        Name = "application_security_group"
+    }
 }
