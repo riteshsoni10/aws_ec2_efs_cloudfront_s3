@@ -106,7 +106,7 @@ Each Task is distributed into `modules` i.e
 
 The module contains the  files to create the efs cluster and output variables to pass it to different modules as dependencies. The HCL code to module efs code
 
-```
+```tf
 module "efs" {
     source         = "./efs_cluster"
     vpc_id         = var.vpc_id
@@ -120,7 +120,7 @@ module "efs" {
 
 Elastic File System is file storage as Service provided by the Amazon Web Services. EFS works in a similiar way as Network File System. We will be creating EFS and allowing ingress traffic on TCP port 2049 i.e NFS Server port.
 
-```
+```tf
 resource "aws_efs_file_system" "nfs_server" {
   creation_token = "efs-cluster"
   tags = {
@@ -131,7 +131,7 @@ resource "aws_efs_file_system" "nfs_server" {
 
 We need to configure Ingress or Security group for the Elastic File System Service to allow EKS cluster worker nodes to mount the pods with the EFS filesystem.
 
-```
+```tf
 ## Security Group for EFS Cluster
 resource "aws_security_group" "efs_security_group"{
 	name = "allow_nfs_traffic"
@@ -166,7 +166,7 @@ resource "aws_security_group" "efs_security_group"{
 
 The module contains the  files to create the EC2 instance along with the dependencies needed for launch and output variables to pass it to different modules as dependencies. The HCL code for instance_launch module.
 
-```
+```tf
 module "instance_launch" {
     source                = "./ec2_instance"
     instance_key_name     = var.key_name
@@ -216,7 +216,7 @@ Terraform loads variables in the following order, with later sources taking prec
  - Any -var and -var-file options on the command line, in the order they are provided. (This includes variables set by a Terraform Cloud workspace.)
 
 HCL Code to create Instance Key-Pair
-```sh
+```tf
 #Creating AWS Key Pair for EC2 Instance Login
 resource "aws_key_pair" "create_instance_key_pair" {
     key_name   = var.instance_key_name
@@ -239,7 +239,7 @@ resource "aws_key_pair" "create_instance_key_pair" {
  
  We will be allowing HTTP protocol and SSH access to our EC2 instance from worldwide.
  
- ```sh
+ ```tf
  resource "aws_security_group" "instance_security_group"{
     name = "allow_http_ssh"
     description = "Allow Application Access"
@@ -279,7 +279,7 @@ resource "aws_key_pair" "create_instance_key_pair" {
 
 We are going to launch the EC2 instance with the Key and security group generated above. For now, we will be using the RedHat Enterprise Linux 8.2 i.e `ami-052c08d70def0ac62`.
 
-```sh
+```tf
 #Creating EC2 instance
 resource "aws_instance" "web_server"{
     ami                         = var.ami_id
@@ -309,7 +309,7 @@ We will be using automation of configuration changes i.e *installation* of packa
 The `local-exec` provisioner is used to invoke the ansible-playbook i.e ansible should be installed on the controller node. The provisioner should **always be inside a resource** block. So, if no resource is to be launched, then resource type `null_resource` comes to our rescue. The EFS Cluster File System dns name is passed in the playbook to mount in the Instance.
 
 
-```sh
+```tf
 resource  "null_resource" "invoke_playbook"{
   provisioner local-exec {
      command = "ansible-playbook -u ${var.connection_user} -i ${aws_instance.web_server.public_ip},\
@@ -333,7 +333,7 @@ The `remote-exec` provisioner is used to install python package required for aut
 
 The remote-exec provisioner requires connection object to connect to the remote system launched.
 
-```sh
+```tf
 resource  "null_resource" "invoke_playbook"{
    depends_on = [
         aws_instance.web_server,
@@ -380,7 +380,7 @@ In `remote-exec` provisioners, we can use any one of following attributes:
 
 We will be using remote-exec provisioner to replace the src with CDN domain name. The resource will be dependent on CDN and invoke playbook resource
 
-```sh
+```tf
 resource "null_resource" "configure_image_url" {
         depends_on = [
              null_resource.application_deployment,
@@ -418,7 +418,7 @@ module "images_bucket"{
 
 Create S3 bucket to serve images from S3 rather than from EC2 instance. The resource type `aws_s3_bucket` is used to create the S3 bucket.
 
-```sh
+```tf
 resource "aws_s3_bucket" "s3_image_store" {
         bucket = var.s3_image_bucket_name
         acl = var.bucket_acl
@@ -446,8 +446,8 @@ The Images stored in the wbsite code repository, is uploaded in S3 for serving t
 
 For uploading the images, we will be cloning the repository in current workspace using `local-exec` provisioner and then will be uploading only the images to the S3 bucket OR we can **configure** `Jenkins Job` to clone the repository for us.
 
-```sh
-esource "null_resource" "download_website_code" {
+```tf
+resource "null_resource" "download_website_code" {
         depends_on = [
                 aws_s3_bucket.s3_image_store,
         ]
@@ -465,7 +465,7 @@ esource "null_resource" "download_website_code" {
 ```
 
 Uploading all the images to S3 Bucket
-```sh
+```tf
 resource "aws_s3_bucket_object" "upload_website_images_s3" {
         depends_on = [
                 null_resource.download_website_code
@@ -515,7 +515,7 @@ Content Delivery Network as Service is provided using CloudFront in AWS Public C
 
 First we will be creating Origin Access Identity, which will be helpfulin hiding S3 endpoint publicly to the world.
 
-```sh
+```tf
 resource "aws_cloudfront_origin_access_identity" "s3_objects" {
         comment = "S3-Image-Source"
 }
@@ -525,7 +525,7 @@ resource "aws_cloudfront_origin_access_identity" "s3_objects" {
 
 The Web Cloudfront Distribution is created to serve objects over http or https protocol.
 
-```sh
+```tf
 resource "aws_cloudfront_distribution" "image_distribution" {
         origin {
                 domain_name      = var.image_source_domain_name
