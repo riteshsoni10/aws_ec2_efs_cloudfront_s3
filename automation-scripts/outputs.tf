@@ -21,3 +21,8 @@ output "efs_cluster_id"{
 output "efs_security_group_id"{
         value = module.efs.security_group_id
 }
+
+         
+output "s3_bucket_domain_name"{
+    value = module.images_bucket.image_source_domain_name
+}
