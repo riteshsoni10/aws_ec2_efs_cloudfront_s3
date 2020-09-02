@@ -3,7 +3,7 @@
 Automated provisioning of EC2 instance with Aapche web server configuration and static contents i.e images stored in S3 and served using AWS Cloudfront service for better user experience throughout the Globe
 
 <p align="center">
-  <img src="/screenshots/infra_flow.png" width="950" title="Infrastructure Flow">
+  <img src="/screenshots/infra_flow.jpg" width="950" title="Infrastructure Flow">
   <br>
   <em>Fig 1.: Project Flow Diagram </em>
 </p>
