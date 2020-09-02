@@ -633,15 +633,16 @@ terraform destroy -auto-approve
 
 | Name | Description |
 |------|-------------|
-| instance_key | Key Pair Name used during launching EC2 instance |
-| security_group_name | Name of Security Group Attached with EC2 instance |
+| instance_key_name | Key Pair Name used during launching EC2 instance |
+| security_group_id | ID of Security Group Attached with EC2 instance |
 | ec2_instance_public_ip | Public IP of EC2 instance |
-| ebs_volume |ID of EBS Volume |
-| s3_bucket | Name of S3 bucket |
+| efs_cluster_dns_name |  DNS Name of EFS Cluster |
+| efs_cluster_id | File system Id of EFS Cluster |
+| efs_security_group_id | ID of Security Group Attached with EFS Cluster |
 | s3_bucket_domain_name | Domain of S3 bucket |
-| cf_id | ID of AWS CloudFront distribution |
-| cf_status | Current status of the distribution |
-| cf_domain_name | Domain name corresponding to the distribution |
+| cloudfront_id | ID of AWS CloudFront distribution |
+| cloudfront_status | Current status of the distribution |
+| cloudfront_domain_name | Domain name corresponding to the distribution |
 
 
 Now, if you want to get yourself relieved from all the manual terraform commands. **Let's integrate Terraform with Jenkins**.
