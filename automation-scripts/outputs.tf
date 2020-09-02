@@ -26,3 +26,12 @@ output "efs_security_group_id"{
 output "s3_bucket_domain_name"{
     value = module.images_bucket.image_source_domain_name
 }
+
+
+output "cloudfront_id" {
+  value       = module.image_cdn_configure.cf_id
+}
+
+output "cloudfront_status" {
+  value       = module.image_cdn_configure.cf_status
+}
