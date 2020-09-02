@@ -14,7 +14,7 @@ Automated provisioning of EC2 instance with Aapche web server configuration and 
 3. [Create the key pair](#create-key-pair)
 4. [Create security group which allow the port 80](#create-security-groups)
 5. [Launch EC2 instance](#launch-ec2-instance)
-6. [mount that volume into /var/www/html](#configuration-changes-using-ansible-automation)
+6. [mount EFS Cluster into /var/www/html](#configuration-changes-using-ansible-automation)
 7. Developer have uploded the code into github repo also the repo has some images.
 8. Copy the github repo code into /var/www/html
 9. [Create S3 bucket](#s3-bucket), and [copy/deploy the images from github repo into the s3 bucket and change the permission to public readable](#upload-images-to-s3-bucket).
