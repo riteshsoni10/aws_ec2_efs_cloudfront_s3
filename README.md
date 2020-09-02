@@ -156,7 +156,7 @@ resource "aws_security_group" "efs_security_group"{
 
 
 <p align="center">
-  <img src="/screenshots/efs_security_group_plan.png" title="EFS Security Group">
+  <img src="/screenshots/efs_secuity_group_plan.png" title="EFS Security Group">
   <br>
   <em>Fig 6.: EFS Security Group </em>
 </p>
